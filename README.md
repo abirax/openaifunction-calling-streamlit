@@ -1,6 +1,6 @@
 # 💬 Chatbot using OpenAI and Streamlit
 
-This project is a simple chatbot built with OpenAI's GPT-3 model and Streamlit. It demonstrates how to use OpenAI's API to generate chat completions and how to integrate it with a Streamlit application.
+This project is a simple chatbot built with OpenAI's GPT-3 model and Streamlit. It demonstrates how to use OpenAI's API to generate chat completions and how to integrate it with a Streamlit application.It specifically shows how function calling works with openai
 
 ## Features
 
