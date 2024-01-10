@@ -9,9 +9,9 @@ import streamlit as st
 # Example dummy function hard coded to return the same weather
 # In production, this could be your backend API or an external API
 
-OPENAI_API_KEY = "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"
-openai_api_key=OPENAI_API_KEY
-client =OpenAI(api_key=OPENAI_API_KEY)
+some = "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"
+
+client =OpenAI(api_key=some)
 def get_current_weather(location, unit="fahrenheit"):
     """Get the current weather in a given location"""
     if "tokyo" in location.lower():
@@ -94,6 +94,8 @@ if prompt := st.chat_input():
         st.session_state.messages.append(msg)
         # Step 4: send the info for each function call and function response to the model
         for tool_call in tool_calls:
+            print(tool_call)
+            print('----')
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
@@ -109,12 +111,12 @@ if prompt := st.chat_input():
                     "content": function_response,
                 }
             )  # extend conversation with function response
-            response = client.chat.completions.create(
-            model="gpt-3.5-turbo-1106", messages=st.session_state.messages, tools=tools)
-            msg=response.choices[0].message
-            st.session_state.messages.append(
-                {"role": "assistant", "content": msg.content})
-            st.chat_message("assistant").write(msg.content)
+        response = client.chat.completions.create(
+        model="gpt-3.5-turbo-1106", messages=st.session_state.messages, tools=tools)
+        msg=response.choices[0].message
+        st.session_state.messages.append(
+            {"role": "assistant", "content": msg.content})
+        st.chat_message("assistant").write(msg.content)
     else:
         st.session_state.messages.append({"role": "assistant", "content": msg.content})
         st.chat_message("assistant").write(msg.content)
