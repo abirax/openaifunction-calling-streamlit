@@ -1,5 +1,6 @@
 # First
 import os
+import re
 from openai import OpenAI
 import json
 
@@ -9,9 +10,9 @@ import streamlit as st
 # Example dummy function hard coded to return the same weather
 # In production, this could be your backend API or an external API
 
-some = "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"
-
-client =OpenAI(api_key=some)
+OPENAI_API_KEY = ""
+openai_api_key=OPENAI_API_KEY
+client =OpenAI(api_key=OPENAI_API_KEY)
 def get_current_weather(location, unit="fahrenheit"):
     """Get the current weather in a given location"""
     if "tokyo" in location.lower():
@@ -22,6 +23,14 @@ def get_current_weather(location, unit="fahrenheit"):
         return json.dumps({"location": "Paris", "temperature": "22", "unit": unit})
     else:
         return json.dumps({"location": location, "temperature": "unknown"})
+def enroll_paperless(email):
+    """Set the email for paperless billing"""
+    pat = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if re.match(pat,email):
+        return json.dumps({"email": email})
+    else:
+        return json.dumps({"email": "Invalid Email"})
+        
 # with st.sidebar:
 #     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
 #     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
@@ -66,7 +75,26 @@ if prompt := st.chat_input():
                     "required": ["location"],
                 },
             },
-        }
+        },
+            {
+            "type": "function",
+            "function": {
+                "name": "enroll_paperless",
+                "description": "Enroll for paperless billing",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "email": {
+                            "type": "string",
+                            "description": "The email where you want to receive your bills",
+                        },
+                        
+                    },
+                    "required": ["email"],
+                },
+            }
+            },
+        
     ]
 
     # Step 1: send the user's prompt and the conversation history to the model
@@ -89,6 +117,7 @@ if prompt := st.chat_input():
         # Note: the JSON response may not always be valid; be sure to handle errors
         available_functions = {
             "get_current_weather": get_current_weather,
+            "enroll_paperless": enroll_paperless,
         }  # only one function in this example, but you can have multiple
         # extend conversation with assistant's reply
         st.session_state.messages.append(msg)
@@ -99,10 +128,15 @@ if prompt := st.chat_input():
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
-            function_response = function_to_call(
-                location=function_args.get("location"),
-                unit=function_args.get("unit"),
+            if(function_name=='enroll_paperless'):
+                function_response = function_to_call(
+                email=function_args.get("email")
             )
+            else:    
+                function_response = function_to_call(
+                    location=function_args.get("location"),
+                    unit=function_args.get("unit"),
+                )
             st.session_state.messages.append(
                 {
                     "tool_call_id": tool_call.id,
