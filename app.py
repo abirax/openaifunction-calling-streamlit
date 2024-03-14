@@ -13,7 +13,7 @@ import streamlit as st
 OPENAI_API_KEY = ""
 openai_api_key=OPENAI_API_KEY
 client =OpenAI(api_key=OPENAI_API_KEY)
-def get_current_weather(location, unit="fahrenheit"):
+def get_current_weather(location, unit="fahrenheit"): 
     """Get the current weather in a given location"""
     if "tokyo" in location.lower():
         return json.dumps({"location": "Tokyo", "temperature": "10", "unit": unit})
@@ -23,13 +23,25 @@ def get_current_weather(location, unit="fahrenheit"):
         return json.dumps({"location": "Paris", "temperature": "22", "unit": unit})
     else:
         return json.dumps({"location": location, "temperature": "unknown"})
+def get_outage(location):
+    """Set the email for paperless billing"""
+    if "seattle" in location.lower():
+        return json.dumps({"Ticket":"ZUUU-234455","location": "Seattle", "expected_restoration": "11hrs"})
+    else:
+        return json.dumps({"result": "No outage reported in your area. Do you want to open a ticket"})
+
 def enroll_paperless(email):
     """Set the email for paperless billing"""
     pat = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if("example.com" in email):
+        return json.dumps({"please provide an email"})
     if re.match(pat,email):
         return json.dumps({"email": email})
     else:
         return json.dumps({"email": "Invalid Email"})
+    
+def create_outage_ticket(location):
+        return json.dumps({"Ticket": "ZUUU-1234","location":location})
         
 # with st.sidebar:
 #     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
@@ -39,7 +51,10 @@ def enroll_paperless(email):
 
 st.title("💬 Chatbot") 
 if "messages" not in st.session_state:
-    st.session_state["messages"]=[{"role": "system", "content": "Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."}]
+    st.session_state["messages"]=[{"role": "system", "content": """ "Don't make assumptions about what values to plug into functions and parameters. Ask for clarification if a user request is ambiguous.
+                                   Question: My lights are out? Answer: Ask which city do you live in? 
+                                   Question: I need to Enroll in paperless billing? Answer: Ask email address?"""}]
+    
     st.session_state.messages.append({"role": "assistant", "content": "How can I help you?"})
 
 for msg in st.session_state.messages:
@@ -94,6 +109,49 @@ if prompt := st.chat_input():
                 },
             }
             },
+            {
+        "type": "function",
+        "function": {
+            "name": "get_outage",
+            "description": "Get outage tickets",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "Strictly ask the user to provide the city for where they are facing outage.",
+                    }
+                },
+                "required": ["location"],
+            },
+        }
+    },
+            {
+        "type": "function",
+        "function": {
+            "name": "create_outage_ticket",
+            "description": "Create outage ticket if there is no outage ticket for the location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "Strictly ask the user to provide the city where they are facing outage.",
+                    },
+                    "Access codes":
+                    {
+                        "type": "string",
+                        "description": "Are there any access codes to the property.",
+                    },
+                      "animals": {
+                        "type": "string",
+                        "description": "Strictly ask the user if there are animals in the property.",
+                    }
+                },
+                "required": ["location","animals"],
+            },
+        }
+    },
         
     ]
 
@@ -101,7 +159,7 @@ if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo-1106", messages=st.session_state.messages, tools=tools)
+        model="gpt-3.5-turbo-1106", messages=st.session_state.messages, tools=tools,temperature=0.1)
     # response = client.chat.completions.create(
     #     model="gpt-3.5-turbo-1106",
     #     messages=messages,
@@ -118,6 +176,8 @@ if prompt := st.chat_input():
         available_functions = {
             "get_current_weather": get_current_weather,
             "enroll_paperless": enroll_paperless,
+            "get_outage":get_outage,
+            "create_outage_ticket":create_outage_ticket
         }  # only one function in this example, but you can have multiple
         # extend conversation with assistant's reply
         st.session_state.messages.append(msg)
@@ -135,7 +195,7 @@ if prompt := st.chat_input():
             else:    
                 function_response = function_to_call(
                     location=function_args.get("location"),
-                    unit=function_args.get("unit"),
+                    
                 )
             st.session_state.messages.append(
                 {
